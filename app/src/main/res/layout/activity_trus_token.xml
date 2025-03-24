@@ -1,0 +1,262 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    tools:context=".TrusToken">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- Existing UI elements -->
+        <Button
+            android:id="@+id/detect_token"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Detect Token"
+            android:textSize="15sp" />
+
+        <TextView
+            android:id="@+id/token_name"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="5dp"
+            android:background="@color/teal_200"
+            android:hint="Token Name"
+            android:textAlignment="center"
+            android:textSize="17sp" />
+
+        <EditText
+            android:id="@+id/token_pin"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="15dp"
+            android:hint="Enter the pin"
+            android:textAlignment="center"
+            android:textSize="16sp"
+            android:inputType="numberPassword" />
+
+        <Button
+            android:id="@+id/login"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="5dp"
+            android:text="Login"
+            android:textSize="15sp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:gravity="center"
+            android:orientation="horizontal">
+
+            <EditText
+                android:id="@+id/plain_text"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="3"
+                android:layout_marginEnd="5dp"
+                android:hint="Enter the plain text"
+                android:textAlignment="center"
+                android:textSize="17sp" />
+
+            <Button
+                android:id="@+id/sign"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Sign"
+                android:textSize="15sp" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/signature"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:background="@color/teal_200"
+            android:hint="Signature"
+            android:textAlignment="center"
+            android:textSize="17sp" />
+
+        <Button
+            android:id="@+id/verify"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:text="Verify"
+            android:textSize="15sp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:gravity="center"
+            android:orientation="horizontal">
+
+            <EditText
+                android:id="@+id/plain_text2"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="4"
+                android:layout_marginEnd="5dp"
+                android:hint="Enter the plain text"
+                android:textAlignment="center"
+                android:textSize="17sp" />
+
+            <Button
+                android:id="@+id/encrypt"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="2"
+                android:text="Encrypt"
+                android:textSize="16sp" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/cipher_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:background="@color/teal_200"
+            android:hint="Cipher text"
+            android:textAlignment="center"
+            android:textSize="17sp" />
+
+        <Button
+            android:id="@+id/decrypt"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:text="Decrypt"
+            android:textSize="15sp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:layout_marginTop="10dp">
+
+            <Button
+                android:id="@+id/clear_token"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="30dp"
+                android:text="Clear"
+                android:textSize="15sp" />
+
+            <Button
+                android:id="@+id/logout"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Logout"
+                android:textSize="15sp" />
+        </LinearLayout>
+
+        <!-- New file upload section -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:gravity="center"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/select_file"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Select File"
+                android:textSize="15sp" />
+
+            <TextView
+                android:id="@+id/file_name"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:text="No file selected"
+                android:textSize="15sp" />
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/share_sign"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:text="Share_Signature"
+            android:textSize="15sp" />
+        <Button
+            android:id="@+id/btnSelectOriginalFile"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Select Original File"/>
+
+        <Button
+            android:id="@+id/btnSelectSignatureFile"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Select Signature File"/>
+
+        <Button
+            android:id="@+id/btnVerifySignature"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Verify Signature"/>
+
+        <Button
+            android:id="@+id/Sign_doc"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Sing_doc"/>
+        <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <EditText
+                android:id="@+id/edtIpAddress"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Enter IP Address (e.g., 10.50.45.179)" />
+
+            <EditText
+                android:id="@+id/edtPort"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Enter Port (e.g., 4444)"
+                android:inputType="number" />
+
+            <EditText
+                android:id="@+id/edtMessage"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Type your message"
+                android:inputType="text" />
+
+            <Button
+                android:id="@+id/btnSend"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Send Encrypted Message" />
+
+            <TextView
+                android:id="@+id/tvReceivedMessage"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Received Message: "
+                android:textSize="16sp"
+                android:padding="10dp" />
+        </LinearLayout>
+
+
+
+    </LinearLayout>
+
+
+</ScrollView>
