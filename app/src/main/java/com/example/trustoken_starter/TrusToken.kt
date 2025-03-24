@@ -31,6 +31,7 @@ import java.io.InputStreamReader
 import java.io.PrintWriter
 import java.net.Socket
 import java.nio.charset.StandardCharsets
+import java.util.Locale
 
 
 class TrusToken : AppCompatActivity() {
@@ -220,8 +221,8 @@ class TrusToken : AppCompatActivity() {
                 val bytes = inputStream?.readBytes() ?: return ""
                 inputStream.close()
 
-                // Convert bytes to hex string
-                bytes.joinToString("") { "%02x".format(it) }
+                // Convert bytes to hex string in lowercase
+                bytes.joinToString("") { "%02x".format(it) }.lowercase(Locale.ROOT)
             } catch (e: Exception) {
                 e.printStackTrace()
                 ""
@@ -290,7 +291,6 @@ class TrusToken : AppCompatActivity() {
             if (originalFileUri != null && signatureFileUri != null) {
 
                 val result = verify(uriToString(signatureFileUri!!), uriToHexString(originalFileUri!!))
-                Log.d("RAZZ:",result)
 
                 Toast.makeText(this, result, Toast.LENGTH_SHORT).show()
             } else {
@@ -308,7 +308,7 @@ class TrusToken : AppCompatActivity() {
 
 
                     // Display decrypted text in TextView
-                    tvDecryptedText.text = hexStringToString(decryptedVal)
+                    tvDecryptedText.text = hexStringToString(hexStringToString(decryptedVal))
                     Toast.makeText(this, "✅ Decryption Successful!", Toast.LENGTH_SHORT).show()
                 } catch (e: Exception) {
                     e.printStackTrace()
@@ -335,11 +335,18 @@ class TrusToken : AppCompatActivity() {
                 Log.e("DEBUG", "❌ Error: ${e.message}")
             }
         }
+        fun stringToHexString(msg: String): String {
+            val stringBuilder = StringBuilder()
+            for (i in msg.indices) {
+                stringBuilder.append(String.format("%02X", msg[i].code))
+            }
+            return stringBuilder.toString().lowercase(Locale.ROOT)  // Convert to lowercase
+        }
         fun sendEncryptedMessage(ip: String, port: Int, message: String) {
             Thread {
                 try {
-                    // Encrypt the message using the native function
-                    plainText = message
+
+                    plainText = stringToHexString(message)
                     val signature = signData() // Sign the message using the signData() function
                     Log.d("SIGNATURE", signature)
                     Log.d("PPPPLLLTXT:",plainText)
@@ -353,6 +360,7 @@ class TrusToken : AppCompatActivity() {
                     val encData = "Data: $encryptedMessage"
                     outputStream.write(encData.toByteArray(Charsets.UTF_8))
                     outputStream.flush()
+
                     val signatureText = " Signature: $signature"
                     outputStream.write(signatureText.toByteArray(Charsets.UTF_8))
                     outputStream.flush()
