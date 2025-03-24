@@ -26,6 +26,7 @@ import java.io.BufferedReader
 import java.io.File
 import java.io.FileWriter
 import java.io.IOException
+import java.io.InputStream
 import java.io.InputStreamReader
 import java.io.PrintWriter
 import java.net.Socket
@@ -57,6 +58,11 @@ class TrusToken : AppCompatActivity() {
     private lateinit var tvReceivedMessage: TextView
     private var originalFileUri: Uri? = null
     private var signatureFileUri: Uri? = null
+    private var encryptedFileUri: Uri? = null // Store the selected file URI
+    private lateinit var btnSelectEncryptedFile: Button // Button to select the encrypted file
+    private lateinit var btnDecryptFile: Button // Button to decrypt the selected file
+    private lateinit var tvDecryptedText: TextView // TextView to display decrypted text
+
 
     private lateinit var edtPin: EditText
     private lateinit var edtPlainText: EditText
@@ -70,6 +76,8 @@ class TrusToken : AppCompatActivity() {
     companion object {
         private const val REQUEST_CODE_ORIGINAL_FILE = 1001
         private const val REQUEST_CODE_SIGNATURE_FILE = 1002
+        private const val REQUEST_CODE_ENCRYPTED_FILE = 1003
+
         init {
             System.loadLibrary("native-lib")
         }
@@ -127,6 +135,10 @@ class TrusToken : AppCompatActivity() {
         edtMessage = findViewById(R.id.edtMessage)
         btnSend = findViewById(R.id.btnSend)
         tvReceivedMessage = findViewById(R.id.tvReceivedMessage)
+        btnSelectEncryptedFile = findViewById(R.id.btnSelectEncryptedFile)
+        btnDecryptFile = findViewById(R.id.btnDecryptFile)
+        tvDecryptedText = findViewById(R.id.tvDecryptedText)
+
         btnDetectToken.setOnClickListener {
             fileDescriptor = detectSmartCard()
             if (libint(fileDescriptor) == 0) {
@@ -151,6 +163,15 @@ class TrusToken : AppCompatActivity() {
                 Toast.makeText(this, "❌ Failed to save file", Toast.LENGTH_SHORT).show()
                 null
             }
+        }
+        fun hexStringToString(hexString: String): String {
+            val output = StringBuilder()
+            for (i in 0 until hexString.length step 2) {
+                val hexChar = hexString.substring(i, i + 2)
+                val charValue = hexChar.toInt(16) // Convert hex to integer
+                output.append(charValue.toChar()) // Convert integer to character
+            }
+            return output.toString()
         }
 
         fun shareFile(fileName: String) {
@@ -215,6 +236,19 @@ class TrusToken : AppCompatActivity() {
             }
             startActivity(Intent.createChooser(intent, "Share Signature"))
         }
+        fun readFileContent(uri: Uri): String {
+            val inputStream: InputStream = contentResolver.openInputStream(uri)!!
+            val bufferedReader = BufferedReader(InputStreamReader(inputStream))
+            val stringBuilder = StringBuilder()
+            var line: String?
+
+            while (bufferedReader.readLine().also { line = it } != null) {
+                stringBuilder.append(line)
+            }
+
+            bufferedReader.close()
+            return stringBuilder.toString() // Returns the content as a string
+        }
 
         var signatureFile: File? = null
 
@@ -263,6 +297,27 @@ class TrusToken : AppCompatActivity() {
                 Toast.makeText(this, "⚠️ Select both files first!", Toast.LENGTH_SHORT).show()
             }
         }
+        btnSelectEncryptedFile.setOnClickListener {
+            pickOriginalFile.launch(arrayOf("*/*")) // Call the file picker method
+        }
+        btnDecryptFile.setOnClickListener {
+            if (originalFileUri != null) {
+                try {
+                    val encryptedHex = readFileContent(originalFileUri!!) // Read the encrypted hex content from file
+                    val decryptedVal = decrypt(encryptedHex) // Decrypt the hex
+
+
+                    // Display decrypted text in TextView
+                    tvDecryptedText.text = hexStringToString(decryptedVal)
+                    Toast.makeText(this, "✅ Decryption Successful!", Toast.LENGTH_SHORT).show()
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    Toast.makeText(this, "❌ Decryption Failed!", Toast.LENGTH_SHORT).show()
+                }
+            } else {
+                Toast.makeText(this, "⚠️ Select an encrypted file first!", Toast.LENGTH_SHORT).show()
+            }
+        }
 
         fun sendToServer(ip: String, port: Int, message: String) {
             try {
@@ -285,6 +340,8 @@ class TrusToken : AppCompatActivity() {
                 try {
                     // Encrypt the message using the native function
                     plainText = message
+                    val signature = signData() // Sign the message using the signData() function
+                    Log.d("SIGNATURE", signature)
                     Log.d("PPPPLLLTXT:",plainText)
                     val encryptedMessage = encrypt()
                     Log.d("PPPLLL",encryptedMessage)
@@ -293,7 +350,11 @@ class TrusToken : AppCompatActivity() {
                     val outputStream = socket.getOutputStream()
 
                     // Send encrypted data
-                    outputStream.write(encryptedMessage.toByteArray(Charsets.UTF_8))
+                    val encData = "Data: $encryptedMessage"
+                    outputStream.write(encData.toByteArray(Charsets.UTF_8))
+                    outputStream.flush()
+                    val signatureText = " Signature: $signature"
+                    outputStream.write(signatureText.toByteArray(Charsets.UTF_8))
                     outputStream.flush()
 
                     // Close socket
