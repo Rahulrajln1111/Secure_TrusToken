@@ -231,7 +231,7 @@ CK_RV openSession(const char *token_pin, JNIEnv *env, jstring jStr) {
 extern "C" {
 
 JNIEXPORT jint JNICALL
-Java_com_example_trustoken_1starter_TrusToken_libint(JNIEnv *env, jobject mainActivityInstance,
+Java_com_example_trustoken_1starter_DetectTokenActivity_libint(JNIEnv *env, jobject mainActivityInstance,
                                                      jint fileDescriptor) {
     if (getLibraryHandle() == nullptr) {
         return -1;
@@ -247,7 +247,7 @@ Java_com_example_trustoken_1starter_TrusToken_libint(JNIEnv *env, jobject mainAc
 }
 
 JNIEXPORT jstring JNICALL
-Java_com_example_trustoken_1starter_TrusToken_login(JNIEnv *env, jobject mainActivityInstance,
+Java_com_example_trustoken_1starter_LoginActivity_login(JNIEnv *env, jobject mainActivityInstance,
                                                     jstring jStr) {
 
 
@@ -351,7 +351,7 @@ Java_com_example_trustoken_1starter_TrusToken_readCertificate(JNIEnv *env,
 }
 
 JNIEXPORT jstring JNICALL
-Java_com_example_trustoken_1starter_TrusToken_logout(JNIEnv *env, jobject thiz) {
+Java_com_example_trustoken_1starter_MainActivity_logout(JNIEnv *env, jobject thiz) {
     if (getLibraryHandle() == nullptr) {
         return env->NewStringUTF("Failed to load library");
     }
@@ -385,7 +385,7 @@ Java_com_example_trustoken_1starter_TrusToken_logout(JNIEnv *env, jobject thiz) 
 }
 
 JNIEXPORT jstring JNICALL
-Java_com_example_trustoken_1starter_TrusToken_signData(JNIEnv *env, jobject mainActivityInstance) {
+Java_com_example_trustoken_1starter_MainActivity_signData(JNIEnv *env, jobject mainActivityInstance) {
 
     if (getLibraryHandle() == nullptr) {
         return env->NewStringUTF("Failed to load library");
@@ -485,7 +485,7 @@ Java_com_example_trustoken_1starter_TrusToken_signData(JNIEnv *env, jobject main
 }
 
 JNIEXPORT jstring JNICALL
-Java_com_example_trustoken_1starter_TrusToken_verify(JNIEnv *env, jobject thiz, jstring jsig, jstring data) {
+Java_com_example_trustoken_1starter_MainActivity_verify(JNIEnv *env, jobject thiz, jstring jsig, jstring data) {
     if (getLibraryHandle() == nullptr) {
         return env->NewStringUTF("Failed to load library");
     }
@@ -528,7 +528,7 @@ Java_com_example_trustoken_1starter_TrusToken_verify(JNIEnv *env, jobject thiz, 
 }
 
 JNIEXPORT jstring JNICALL
-Java_com_example_trustoken_1starter_TrusToken_encrypt(JNIEnv *env, jobject mainActivityInstance
+Java_com_example_trustoken_1starter_MainActivity_encrypt(JNIEnv *env, jobject mainActivityInstance
 ) {
 
     if (getLibraryHandle() == nullptr) {
@@ -596,7 +596,7 @@ Java_com_example_trustoken_1starter_TrusToken_encrypt(JNIEnv *env, jobject mainA
 }
 
 JNIEXPORT jstring JNICALL
-Java_com_example_trustoken_1starter_TrusToken_decrypt(JNIEnv *env, jobject thiz, jstring jStr) {
+Java_com_example_trustoken_1starter_MainActivity_decrypt(JNIEnv *env, jobject thiz, jstring jStr) {
     if (getLibraryHandle() == nullptr) {
         return env->NewStringUTF("Failed to load library");
     }

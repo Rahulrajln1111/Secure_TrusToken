@@ -40,7 +40,7 @@ android {
     externalNativeBuild {
         cmake {
             path = File("src/main/cpp/CMakeLists.txt")
-            version = "3.30.5"
+            version = "3.31.6"
 //            cppFlags = "-fsanitize=address"
 //            ldFlags = ("-fsanitize=address"
         }

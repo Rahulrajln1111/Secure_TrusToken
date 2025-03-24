@@ -12,6 +12,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
+import android.provider.OpenableColumns
 import android.util.Log
 import android.widget.Button
 import android.widget.EditText
@@ -31,9 +32,10 @@ import java.io.InputStreamReader
 import java.io.PrintWriter
 import java.net.Socket
 import java.nio.charset.StandardCharsets
+import java.util.Locale
 
 
-class TrusToken : AppCompatActivity() {
+class MainActivity : AppCompatActivity() {
 
     private lateinit var btnDetectToken: Button
     private lateinit var btnLogin: Button
@@ -55,7 +57,6 @@ class TrusToken : AppCompatActivity() {
     private lateinit var edtPort: EditText
     private lateinit var edtMessage: EditText
     private lateinit var btnSend: Button
-    private lateinit var tvReceivedMessage: TextView
     private var originalFileUri: Uri? = null
     private var signatureFileUri: Uri? = null
     private var encryptedFileUri: Uri? = null // Store the selected file URI
@@ -99,6 +100,26 @@ class TrusToken : AppCompatActivity() {
 
     @SuppressLint("MissingInflatedId")
     override fun onCreate(savedInstanceState: Bundle?) {
+        isTokenConnected = DetectTokenActivity.isTokenConnected;
+        val deviceSecurityCheck = DeviceSecurityCheck(this)
+
+
+        if (deviceSecurityCheck.isDeviceCompromised()) {
+            // Device is compromised, show warning and exit the app
+            Log.e("Security Check", "The device is compromised!")
+
+            // Optionally, show a toast or dialog to notify the user
+            Toast.makeText(this, "Your device is compromised. Exiting the app.", Toast.LENGTH_LONG).show()
+
+            // Exit the app
+            finishAffinity()  // Close all activities and exit the app
+
+        } else {
+            // Device is secure
+            Log.d("Security Check", "The device is secure.")
+            Toast.makeText(this, "✅ This Device is Secure", Toast.LENGTH_SHORT).show()
+        }
+
         if (Build.VERSION.SDK_INT > 9) {
             val policy = android.os.StrictMode.ThreadPolicy.Builder().permitAll().build()
             android.os.StrictMode.setThreadPolicy(policy)
@@ -107,8 +128,6 @@ class TrusToken : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_trus_token)
 
-        btnDetectToken = findViewById(R.id.detect_token)
-        btnLogin = findViewById(R.id.login)
         btnSign = findViewById(R.id.sign)
         btnVerify = findViewById(R.id.verify)
         btnEncrypt = findViewById(R.id.encrypt)
@@ -120,7 +139,6 @@ class TrusToken : AppCompatActivity() {
         tvSignature = findViewById(R.id.signature)
         tvEncryptedData = findViewById(R.id.cipher_text)
 
-        edtPin = findViewById(R.id.token_pin)
         edtPlainText = findViewById(R.id.plain_text)
         edtPlainText2 = findViewById(R.id.plain_text2)
         btnShare = findViewById(R.id.share_sign)
@@ -134,22 +152,13 @@ class TrusToken : AppCompatActivity() {
         edtPort = findViewById(R.id.edtPort)
         edtMessage = findViewById(R.id.edtMessage)
         btnSend = findViewById(R.id.btnSend)
-        tvReceivedMessage = findViewById(R.id.tvReceivedMessage)
         btnSelectEncryptedFile = findViewById(R.id.btnSelectEncryptedFile)
         btnDecryptFile = findViewById(R.id.btnDecryptFile)
         tvDecryptedText = findViewById(R.id.tvDecryptedText)
 
-        btnDetectToken.setOnClickListener {
-            fileDescriptor = detectSmartCard()
-            if (libint(fileDescriptor) == 0) {
-                tvTokenName.text = "Trustoken"
-                isTokenConnected = true
-            }
-            Toast.makeText(this, "File Descriptor: $fileDescriptor", Toast.LENGTH_SHORT).show()
-        }
 
 
-         fun saveToFile(baseName: String, data: String, extension: String): File? {
+        fun saveToFile(baseName: String, data: String, extension: String): File? {
             return try {
                 val fileName = "${baseName}_${System.currentTimeMillis()}.$extension"
                 val file = File(getExternalFilesDir(null), fileName)
@@ -220,21 +229,28 @@ class TrusToken : AppCompatActivity() {
                 val bytes = inputStream?.readBytes() ?: return ""
                 inputStream.close()
 
-                // Convert bytes to hex string
-                bytes.joinToString("") { "%02x".format(it) }
+                // Convert bytes to hex string in lowercase
+                bytes.joinToString("") { "%02x".format(it) }.lowercase(Locale.ROOT)
             } catch (e: Exception) {
                 e.printStackTrace()
                 ""
             }
         }
-         fun shareFile(file: File) {
-            val uri = FileProvider.getUriForFile(this, "${packageName}.provider", file)
-            val intent = Intent(Intent.ACTION_SEND).apply {
-                type = "text/plain"
-                putExtra(Intent.EXTRA_STREAM, uri)
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION) // Grant access to file
+        fun shareFile(file: File) {
+            try {
+                val uri = FileProvider.getUriForFile(this, "${packageName}.fileprovider", file)
+
+                val intent = Intent(Intent.ACTION_SEND).apply {
+                    type = "application/octet-stream"  // Adjust MIME type based on your file type
+                    putExtra(Intent.EXTRA_STREAM, uri)
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)  // Allow read access
+                }
+
+                startActivity(Intent.createChooser(intent, "Share File"))
+            } catch (e: Exception) {
+                e.printStackTrace()
+                Toast.makeText(this, "❌ Failed to share file!", Toast.LENGTH_SHORT).show()
             }
-            startActivity(Intent.createChooser(intent, "Share Signature"))
         }
         fun readFileContent(uri: Uri): String {
             val inputStream: InputStream = contentResolver.openInputStream(uri)!!
@@ -252,13 +268,38 @@ class TrusToken : AppCompatActivity() {
 
         var signatureFile: File? = null
 
+
+        fun getFileName(uri: Uri): String {
+            val cursor = contentResolver.query(uri, null, null, null, null)
+            cursor?.use {
+                val columnIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                if (columnIndex != -1 && cursor.moveToFirst()) {
+                    return cursor.getString(columnIndex)
+                }
+            }
+            return uri.lastPathSegment ?: "unknown_file"
+        }
+        fun getFileNameWithoutExtension(uri: Uri): String {
+            val fileName = getFileName(uri)
+            return fileName.substringBeforeLast(".")
+        }
+
+
         btnSignDoc.setOnClickListener {
             if (originalFileUri != null) {
                 val fileHexString = uriToHexString(originalFileUri!!)
                 if (fileHexString.isNotEmpty()) {
-                    plainText = fileHexString.toString();
-                    val signature = signData() // Call native function
-                    signatureFile = saveToFile("signature", signature, "txt") // Store file reference
+                    plainText = fileHexString
+
+                    // Get the base name of the original file
+                    val baseFileName = getFileNameWithoutExtension(originalFileUri!!)
+
+                    // Generate the signature using native function
+                    val signature = signData()
+
+                    // Save the signature file with the same base name
+                    signatureFile = saveToFile(baseFileName, signature, "txt") // Store file reference with base name
+
                     Toast.makeText(this, "✅ Signature Generated", Toast.LENGTH_SHORT).show()
                 } else {
                     Toast.makeText(this, "⚠️ Could not read file content", Toast.LENGTH_SHORT).show()
@@ -290,7 +331,6 @@ class TrusToken : AppCompatActivity() {
             if (originalFileUri != null && signatureFileUri != null) {
 
                 val result = verify(uriToString(signatureFileUri!!), uriToHexString(originalFileUri!!))
-                Log.d("RAZZ:",result)
 
                 Toast.makeText(this, result, Toast.LENGTH_SHORT).show()
             } else {
@@ -308,7 +348,7 @@ class TrusToken : AppCompatActivity() {
 
 
                     // Display decrypted text in TextView
-                    tvDecryptedText.text = hexStringToString(decryptedVal)
+                    tvDecryptedText.text = hexStringToString(hexStringToString(decryptedVal))
                     Toast.makeText(this, "✅ Decryption Successful!", Toast.LENGTH_SHORT).show()
                 } catch (e: Exception) {
                     e.printStackTrace()
@@ -335,11 +375,18 @@ class TrusToken : AppCompatActivity() {
                 Log.e("DEBUG", "❌ Error: ${e.message}")
             }
         }
+        fun stringToHexString(msg: String): String {
+            val stringBuilder = StringBuilder()
+            for (i in msg.indices) {
+                stringBuilder.append(String.format("%02X", msg[i].code))
+            }
+            return stringBuilder.toString().lowercase(Locale.ROOT)  // Convert to lowercase
+        }
         fun sendEncryptedMessage(ip: String, port: Int, message: String) {
             Thread {
                 try {
-                    // Encrypt the message using the native function
-                    plainText = message
+
+                    plainText = stringToHexString(message)
                     val signature = signData() // Sign the message using the signData() function
                     Log.d("SIGNATURE", signature)
                     Log.d("PPPPLLLTXT:",plainText)
@@ -353,6 +400,7 @@ class TrusToken : AppCompatActivity() {
                     val encData = "Data: $encryptedMessage"
                     outputStream.write(encData.toByteArray(Charsets.UTF_8))
                     outputStream.flush()
+
                     val signatureText = " Signature: $signature"
                     outputStream.write(signatureText.toByteArray(Charsets.UTF_8))
                     outputStream.flush()
@@ -385,16 +433,6 @@ class TrusToken : AppCompatActivity() {
         }
 
 
-        btnLogin.setOnClickListener {
-            if (isTokenConnected && edtPin.text.toString().isNotEmpty()) {
-                tokenPin = edtPin.text.toString()
-                println("Token Pin: $tokenPin")
-                val res = login(tokenPin)
-                println("Login Response: $res")
-                Toast.makeText(this, res, Toast.LENGTH_LONG).show()
-                sendToServer("10.50.45.179",5554,"login_successes");
-            }
-        }
 
 
         btnSign.setOnClickListener {
@@ -422,7 +460,7 @@ class TrusToken : AppCompatActivity() {
 
         btnDecrypt.setOnClickListener {
             if (isTokenConnected && tvEncryptedData.text.toString().isNotEmpty() && isHexString(tvEncryptedData.text.toString()))
-            tvEncryptedData.text = byteArrayToAsciiString(hexStringToByteArray(decrypt(tvEncryptedData.text.toString())))
+                tvEncryptedData.text = byteArrayToAsciiString(hexStringToByteArray(decrypt(tvEncryptedData.text.toString())))
         }
 
         btnLogout.setOnClickListener {
@@ -432,7 +470,6 @@ class TrusToken : AppCompatActivity() {
         }
 
         btnClear.setOnClickListener {
-            edtPin.text.clear()
             edtPlainText.text.clear()
             edtPlainText2.text.clear()
             tvSignature.text = ""
@@ -440,31 +477,8 @@ class TrusToken : AppCompatActivity() {
         }
     }
 
-    private fun detectSmartCard(): Int {
-        val usbManager = getSystemService(Context.USB_SERVICE) as UsbManager?
-        usbManager?.deviceList?.values?.forEach { device ->
-            if (isSmartCardReader(device)) {
-                val flag = if (Build.VERSION.SDK_INT >= 33) PendingIntent.FLAG_IMMUTABLE else 0
-                val permissionIntent = PendingIntent.getBroadcast(this, 0, Intent(ACTION_USB_PERMISSION), flag)
-                usbManager.requestPermission(device, permissionIntent)
-                if (usbManager.hasPermission(device)) {
-                    return getFileDescriptor(usbManager, device)
-                }
-            }
-        }
-        return -1
-    }
 
-    private fun isSmartCardReader(device: UsbDevice): Boolean {
-        return if (device.vendorId == 10381 && device.productId == 64) {
-            tvTokenName.text = "Trustoken"
-            true
-        } else false
-    }
 
-    private fun getFileDescriptor(manager: UsbManager, device: UsbDevice): Int {
-        return manager.openDevice(device)?.fileDescriptor ?: -1
-    }
 
 //    fun getTokenPin(): String {
 //        return token_pin
@@ -474,15 +488,12 @@ class TrusToken : AppCompatActivity() {
         return plainText
     }
 
-//    external fun loadLibrary(libPath: String): Boolean
+    //    external fun loadLibrary(libPath: String): Boolean
 //    external fun openSession(): Boolean
-    external fun libint(int: Int): Int
-    external fun login(tokenPin: String): String
     external fun signData(): String
     external fun verify(string: String, plainText: String): String
     external fun encrypt(): String
     external fun decrypt(string: String): String
     external fun logout(): String
 }
-
 

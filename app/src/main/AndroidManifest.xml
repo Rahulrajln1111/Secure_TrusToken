@@ -22,13 +22,13 @@
         android:theme="@style/Theme.TrusToken_Starter"
         tools:targetApi="31">
 
-        <activity
-            android:name=".TrusToken"
-            android:exported="true"
-            android:theme="@style/Theme.TrusToken_Starter">
+        <activity android:name=".MainActivity" />
+        <activity android:name=".LoginActivity" />
+        <activity android:name=".DetectTokenActivity" />
+        <activity android:name=".SplashActivity"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
@@ -39,7 +39,7 @@
             android:grantUriPermissions="true">
             <meta-data
                 android:name="android.support.FILE_PROVIDER_PATHS"
-                android:resource="@xml/filepaths"/>
+                android:resource="@xml/file_paths"/>
         </provider>
 
     </application>
