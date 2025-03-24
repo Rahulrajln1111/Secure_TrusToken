@@ -12,6 +12,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
+import android.provider.OpenableColumns
 import android.util.Log
 import android.widget.Button
 import android.widget.EditText
@@ -103,6 +104,7 @@ class TrusToken : AppCompatActivity() {
 
         val deviceSecurityCheck = DeviceSecurityCheck(this)
 
+
         if (deviceSecurityCheck.isDeviceCompromised()) {
             // Device is compromised, show warning and exit the app
             Log.e("Security Check", "The device is compromised!")
@@ -116,6 +118,7 @@ class TrusToken : AppCompatActivity() {
         } else {
             // Device is secure
             Log.d("Security Check", "The device is secure.")
+            Toast.makeText(this, "✅ This Device is Secure", Toast.LENGTH_SHORT).show()
         }
 
         if (Build.VERSION.SDK_INT > 9) {
@@ -246,14 +249,21 @@ class TrusToken : AppCompatActivity() {
                 ""
             }
         }
-         fun shareFile(file: File) {
-            val uri = FileProvider.getUriForFile(this, "${packageName}.provider", file)
-            val intent = Intent(Intent.ACTION_SEND).apply {
-                type = "text/plain"
-                putExtra(Intent.EXTRA_STREAM, uri)
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION) // Grant access to file
+        fun shareFile(file: File) {
+            try {
+                val uri = FileProvider.getUriForFile(this, "${packageName}.fileprovider", file)
+
+                val intent = Intent(Intent.ACTION_SEND).apply {
+                    type = "application/octet-stream"  // Adjust MIME type based on your file type
+                    putExtra(Intent.EXTRA_STREAM, uri)
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)  // Allow read access
+                }
+
+                startActivity(Intent.createChooser(intent, "Share File"))
+            } catch (e: Exception) {
+                e.printStackTrace()
+                Toast.makeText(this, "❌ Failed to share file!", Toast.LENGTH_SHORT).show()
             }
-            startActivity(Intent.createChooser(intent, "Share Signature"))
         }
         fun readFileContent(uri: Uri): String {
             val inputStream: InputStream = contentResolver.openInputStream(uri)!!
@@ -271,13 +281,38 @@ class TrusToken : AppCompatActivity() {
 
         var signatureFile: File? = null
 
+
+        fun getFileName(uri: Uri): String {
+            val cursor = contentResolver.query(uri, null, null, null, null)
+            cursor?.use {
+                val columnIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                if (columnIndex != -1 && cursor.moveToFirst()) {
+                    return cursor.getString(columnIndex)
+                }
+            }
+            return uri.lastPathSegment ?: "unknown_file"
+        }
+        fun getFileNameWithoutExtension(uri: Uri): String {
+            val fileName = getFileName(uri)
+            return fileName.substringBeforeLast(".")
+        }
+
+
         btnSignDoc.setOnClickListener {
             if (originalFileUri != null) {
                 val fileHexString = uriToHexString(originalFileUri!!)
                 if (fileHexString.isNotEmpty()) {
-                    plainText = fileHexString.toString();
-                    val signature = signData() // Call native function
-                    signatureFile = saveToFile("signature", signature, "txt") // Store file reference
+                    plainText = fileHexString
+
+                    // Get the base name of the original file
+                    val baseFileName = getFileNameWithoutExtension(originalFileUri!!)
+
+                    // Generate the signature using native function
+                    val signature = signData()
+
+                    // Save the signature file with the same base name
+                    signatureFile = saveToFile(baseFileName, signature, "txt") // Store file reference with base name
+
                     Toast.makeText(this, "✅ Signature Generated", Toast.LENGTH_SHORT).show()
                 } else {
                     Toast.makeText(this, "⚠️ Could not read file content", Toast.LENGTH_SHORT).show()
@@ -418,7 +453,7 @@ class TrusToken : AppCompatActivity() {
                 val res = login(tokenPin)
                 println("Login Response: $res")
                 Toast.makeText(this, res, Toast.LENGTH_LONG).show()
-                sendToServer("10.50.45.179",5554,"login_successes");
+                //sendToServer("10.50.45.179",5554,"login_successes");
             }
         }
 
