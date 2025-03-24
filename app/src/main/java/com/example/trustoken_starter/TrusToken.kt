@@ -70,7 +70,6 @@ class TrusToken : AppCompatActivity() {
     companion object {
         private const val REQUEST_CODE_ORIGINAL_FILE = 1001
         private const val REQUEST_CODE_SIGNATURE_FILE = 1002
-        private const val REQUEST_CODE_ENCRYPTED_FILE = 1003
         init {
             System.loadLibrary("native-lib")
         }
@@ -312,12 +311,6 @@ class TrusToken : AppCompatActivity() {
         fun bytesToHex(bytes: ByteArray): String {
             return bytes.joinToString("") { "%02x".format(it) }
         }
-        fun readFileContent(uri: Uri): String {
-            val contentResolver = contentResolver
-            val inputStream = contentResolver.openInputStream(uri)
-            return inputStream?.bufferedReader()?.use { it.readText() } ?: ""
-        }
-
         btnSend.setOnClickListener {
             val ip = edtIpAddress.text.toString()
             val port = edtPort.text.toString().toIntOrNull() ?: return@setOnClickListener
@@ -327,23 +320,6 @@ class TrusToken : AppCompatActivity() {
                 sendEncryptedMessage(ip, port, message)
             } else {
                 Toast.makeText(this, "Enter valid IP, port, and message", Toast.LENGTH_SHORT).show()
-            }
-        }
-        btnDecryptFile.setOnClickListener {
-            if (encryptedFileUri != null) {
-                try {
-                    val encryptedHex = readFileContent(encryptedFileUri!!)  // Read encrypted hex from file
-                    val decryptedHex = decrypt(encryptedHex)  // Decrypt hex string
-                    val decryptedText = hexToString(decryptedHex)  // Convert hex back to string
-
-                    tvDecryptedText.text = decryptedText
-                    Toast.makeText(this, "✅ Decryption Successful!", Toast.LENGTH_SHORT).show()
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    Toast.makeText(this, "❌ Decryption Failed!", Toast.LENGTH_SHORT).show()
-                }
-            } else {
-                Toast.makeText(this, "⚠️ Select an encrypted file first!", Toast.LENGTH_SHORT).show()
             }
         }
 
