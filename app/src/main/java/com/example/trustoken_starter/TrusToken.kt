@@ -100,6 +100,24 @@ class TrusToken : AppCompatActivity() {
 
     @SuppressLint("MissingInflatedId")
     override fun onCreate(savedInstanceState: Bundle?) {
+
+        val deviceSecurityCheck = DeviceSecurityCheck(this)
+
+        if (deviceSecurityCheck.isDeviceCompromised()) {
+            // Device is compromised, show warning and exit the app
+            Log.e("Security Check", "The device is compromised!")
+
+            // Optionally, show a toast or dialog to notify the user
+            Toast.makeText(this, "Your device is compromised. Exiting the app.", Toast.LENGTH_LONG).show()
+
+            // Exit the app
+            finishAffinity()  // Close all activities and exit the app
+
+        } else {
+            // Device is secure
+            Log.d("Security Check", "The device is secure.")
+        }
+
         if (Build.VERSION.SDK_INT > 9) {
             val policy = android.os.StrictMode.ThreadPolicy.Builder().permitAll().build()
             android.os.StrictMode.setThreadPolicy(policy)
